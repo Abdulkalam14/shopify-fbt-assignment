@@ -1,0 +1,181 @@
+<div class="fbt-section">
+  <h2>Frequently Bought Together</h2>
+
+  <form id="fbt-form">
+    <div class="fbt-products">
+      {% for product in section.settings.fbt_products %}
+        <div class="fbt-item">
+          <input 
+            type="checkbox" 
+            class="fbt-checkbox"
+            data-price="{{ product.price }}"
+            data-variant="{{ product.variants.first.id }}"
+            checked
+            >
+
+
+          <img 
+            src="{{ product.featured_image | image_url: width: 150 }}" 
+            alt="{{ product.title }}"
+            width="150"
+            height="150"
+          >
+
+          <h4>{{ product.title }}</h4>
+          <p>{{ product.price | money }}</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <h3>
+   Total: 
+   <span 
+     id="fbt-total" 
+     data-main-price="{{ product.price }}"
+   >
+    {{ product.price | money }}
+   </span>
+   </h3>
+
+   <button type="button" id="fbt-add-cart">
+  Add Selected to Cart
+  </button>
+
+  </form>
+</div>
+<style>
+.fbt-section {
+  border: 1px solid #eee;
+  padding: 20px;
+  margin-top: 30px;
+  background: #fafafa;
+}
+
+.fbt-section h2 {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.fbt-products {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+}
+
+.fbt-item {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+  background: white;
+  border-radius: 8px;
+}
+
+.fbt-item img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+.fbt-item h4 {
+  font-size: 14px;
+  margin: 10px 0 5px;
+}
+
+.fbt-item p {
+  font-weight: bold;
+}
+
+#fbt-add-cart {
+  margin-top: 15px;
+  padding: 12px 20px;
+  background: black;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  width: 100%;
+  border-radius: 6px;
+}
+
+#fbt-add-cart:hover {
+  background: #333;
+}
+</style>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const checkboxes = document.querySelectorAll(".fbt-checkbox");
+  const totalElement = document.getElementById("fbt-total");
+
+  const mainPrice = parseInt(totalElement.dataset.mainPrice);
+
+  function updateTotal() {
+    let total = mainPrice;
+
+    checkboxes.forEach(box => {
+      if (box.checked) {
+        total += parseInt(box.dataset.price);
+      }
+    });
+
+    totalElement.textContent = "₹" + (total / 100).toFixed(2);
+  }
+
+  checkboxes.forEach(box => {
+    box.addEventListener("change", updateTotal);
+  });
+
+  updateTotal();
+});
+
+document.getElementById("fbt-add-cart").addEventListener("click", function () {
+  const items = [];
+
+  // Add main product
+  items.push({
+    id: {{ product.variants.first.id }},
+    quantity: 1
+  });
+
+  // Add selected products
+  document.querySelectorAll(".fbt-checkbox:checked").forEach(box => {
+    items.push({
+      id: box.dataset.variant,
+      quantity: 1
+    });
+  });
+
+  fetch('/cart/add.js', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ items })
+  })
+  .then(response => response.json())
+  .then(() => {
+    alert("Products added to cart!");
+    window.location.href = "/cart";
+  });
+});
+
+</script>
+
+
+{% schema %}
+{
+  "name": "FBT Section",
+  "settings": [
+    {
+      "type": "product_list",
+      "id": "fbt_products",
+      "label": "Select Frequently Bought Products"
+    }
+  ],
+  "presets": [
+    {
+      "name": "FBT Section"
+    }
+  ]
+}
+{% endschema %}
